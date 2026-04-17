@@ -14,15 +14,19 @@ docker build -t "$IMAGE" .
 echo "Pushing Docker image to Docker Hub"
 docker push "$IMAGE"
 
+echo "Setting image using kustomize"
+cd k8s/overlays/prod
+kustomize edit set image pranavpatildevops/eks-app="$IMAGE"
+
 echo "Applying Kubernetes manifests"
-kubectl apply -k k8s/base
+kubectl apply -k .
 
-if kubectl get deployment eks-app >/dev/null 2>&1; then
-  echo "Updating deployment image to $IMAGE"
-  kubectl set image deployment/eks-app eks-app="$IMAGE" --record
-fi
-
+cd "$WORKDIR"
+echo "Applying Ingress"
 kubectl apply -f k8s/ingress.yaml
-kubectl rollout status deployment/eks-app
+
+echo "Waiting for rollout to complete..."
+kubectl rollout status deployment/prod-eks-app
 
 echo "Deployment successful: $IMAGE"
+

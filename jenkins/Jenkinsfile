@@ -22,15 +22,17 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                sed -i "s|latest|${BUILD_NUMBER}|g" k8s/base/deployment.yaml
-                kubectl apply -f k8s/
+                aws eks update-kubeconfig --region ap-south-1 --name pranav-prod-eks
+                cd k8s/overlays/prod
+                kustomize edit set image pranavpatildevops/eks-app=$IMAGE
+                kubectl apply -k .
                 '''
             }
         }
 
         stage('Rollback if Failed') {
             steps {
-                sh 'kubectl rollout status deployment/eks-app || kubectl rollout undo deployment/eks-app'
+                sh 'kubectl rollout status deployment/prod-eks-app || kubectl rollout undo deployment/prod-eks-app'
             }
         }
     }

@@ -1,1 +1,1 @@
-kubectl rollout undo deployment/eks-app
+kubectl rollout undo deployment/prod-eks-app
