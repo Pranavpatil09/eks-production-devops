@@ -2,14 +2,14 @@
 
 ## 🚀 Features
 - AWS EKS Cluster (Terraform)
-- CI/CD Pipeline (Jenkins)
+- CI/CD Pipeline (GitHub Actions)
 - Dockerized Application
 - Kubernetes Deployment with HPA
 - ALB Ingress Controller
 - Monitoring (Prometheus + Grafana)
 
 ## 🔁 Workflow
-Developer → Jenkins → Docker → EKS → ALB → User
+Developer → GitHub Actions → Docker → EKS → ALB → User
 
 ## 📊 Highlights
 - Auto Scaling enabled

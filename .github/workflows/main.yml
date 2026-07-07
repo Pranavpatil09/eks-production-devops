@@ -1,0 +1,51 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ap-south-1
+  EKS_CLUSTER_NAME: pranav-prod-eks
+  DOCKER_IMAGE: pranavpatildevops/eks-app
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG=${{ github.run_number }}
+          docker build -t $DOCKER_IMAGE:$IMAGE_TAG .
+          docker push $DOCKER_IMAGE:$IMAGE_TAG
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Kubeconfig
+        run: aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+
+      - name: Deploy to EKS
+        run: |
+          IMAGE_TAG=${{ github.run_number }}
+          cd k8s/overlays/prod
+          kustomize edit set image $DOCKER_IMAGE=$DOCKER_IMAGE:$IMAGE_TAG
+          kubectl apply -k .
+
+      - name: Verify Rollout
+        run: |
+          kubectl rollout status deployment/prod-eks-app || kubectl rollout undo deployment/prod-eks-app
